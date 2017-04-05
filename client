@@ -23,6 +23,14 @@ except dbus.exceptions.DBusException as e:
 
 # Call the appropriate method with the given number of bits
 if args.slow:
-    print("Your random number is: %s" % random_data.slow(int(args.bits)))
+    import time
+    thread_id = random_data.slow(int(args.bits))
+    while True:
+        result = random_data.slow_result(thread_id)
+        if result:
+            print("Your random number is: %s" % result)
+            break
+
+        time.sleep(1)
 else:
     print("Your random number is: %s" % random_data.quick(int(args.bits)))
