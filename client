@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+
+# Take in a single optional integral argument
+import sys
+bits = 16
+if len(sys.argv) == 2:
+    try:
+        bits = int(sys.argv[1])
+    except ValueError:
+        print("input argument must be integer")
+        sys.exit(1)
+
+# Create a reference to the RandomData object on the  session bus
+import dbus, dbus.exceptions
+try:
+    bus = dbus.SessionBus()
+    random_data = bus.get_object("com.larry-price.test", "/com/larry_price/test/RandomData")
+except dbus.exceptions.DBusException as e:
+    print("Failed to initialize D-Bus object: '%s'" % str(e))
+    sys.exit(2)
+
+# Call the quick method with the given number of bits
+print("Your random number is: %s" % random_data.quick(bits))
