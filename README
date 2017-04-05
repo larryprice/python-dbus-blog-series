@@ -1,0 +1,3 @@
+This is a companion repository for my blog post series on python d-bus services at https://larry-price.com
+
+Run the service with `./service`.

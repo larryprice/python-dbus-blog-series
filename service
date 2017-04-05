@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+
+import dbus, dbus.service, dbus.exceptions
+import sys
+
+from dbus.mainloop.glib import DBusGMainLoop
+from gi.repository import GLib
+
+SERVICE_NAME = "com.larry-price.test"
+
+# Initialize a main loop
+DBusGMainLoop(set_as_default=True)
+loop = GLib.MainLoop()
+
+# Declare a name where our service can be reached
+try:
+    bus_name = dbus.service.BusName(SERVICE_NAME,
+                                    bus=dbus.SessionBus(),
+                                    do_not_queue=True)
+except dbus.exceptions.NameExistsException:
+    print("service is already running")
+    sys.exit(1)
+
+# Run the loop
+try:
+    loop.run()
+except KeyboardInterrupt:
+    print("keyboard interrupt received")
+except Exception as e:
+    print("Unexpected exception occurred: '{}'".format(str(e)))
+finally:
+    loop.quit()
