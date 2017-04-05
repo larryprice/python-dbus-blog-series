@@ -2,13 +2,15 @@
 
 # Take in a single optional integral argument
 import sys
-bits = 16
-if len(sys.argv) == 2:
-    try:
-        bits = int(sys.argv[1])
-    except ValueError:
-        print("input argument must be integer")
-        sys.exit(1)
+import argparse
+
+arg_parser = argparse.ArgumentParser(description='Get random numbers')
+arg_parser.add_argument('bits', nargs='?', default=16)
+arg_parser.add_argument('-s', '--slow', action='store_true',
+                        default=False, required=False,
+                        help='Use the slow method')
+
+args = arg_parser.parse_args()
 
 # Create a reference to the RandomData object on the  session bus
 import dbus, dbus.exceptions
@@ -19,5 +21,8 @@ except dbus.exceptions.DBusException as e:
     print("Failed to initialize D-Bus object: '%s'" % str(e))
     sys.exit(2)
 
-# Call the quick method with the given number of bits
-print("Your random number is: %s" % random_data.quick(bits))
+# Call the appropriate method with the given number of bits
+if args.slow:
+    print("Your random number is: %s" % random_data.slow(int(args.bits)))
+else:
+    print("Your random number is: %s" % random_data.quick(int(args.bits)))
