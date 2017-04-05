@@ -23,6 +23,10 @@ except dbus.exceptions.NameExistsException:
 
 # Run the loop
 try:
+    # Create our initial objects
+    from dbustest.random_data import RandomData
+    RandomData(bus_name)
+
     loop.run()
 except KeyboardInterrupt:
     print("keyboard interrupt received")
