@@ -12,25 +12,61 @@ arg_parser.add_argument('-s', '--slow', action='store_true',
 
 args = arg_parser.parse_args()
 
-# Create a reference to the RandomData object on the  session bus
-import dbus, dbus.exceptions
-try:
-    bus = dbus.SessionBus()
-    random_data = bus.get_object("com.larry-price.test", "/com/larry_price/test/RandomData")
-except dbus.exceptions.DBusException as e:
-    print("Failed to initialize D-Bus object: '%s'" % str(e))
-    sys.exit(2)
+# Encapsulate calling the RandomData object on the session bus with a main loop
+import dbus, dbus.exceptions, dbus.mainloop.glib
+import threading
+from gi.repository import GLib
+class RandomDataClient(object):
+    def __enter__(self):
+        self._setup_dbus_loop()
+        self._setup_object()
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._loop.quit()
+        return True
+
+    def _setup_dbus_loop(self):
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        self._loop = GLib.MainLoop()
+
+        self._thread = threading.Thread(target=self._loop.run)
+        self._thread.start()
+
+    def _setup_object(self):
+        try:
+            self._bus = dbus.SessionBus()
+            self._random_data = self._bus.get_object("com.larry-price.test",
+                                                     "/com/larry_price/test/RandomData")
+        except dbus.exceptions.DBusException as e:
+            print("Failed to initialize D-Bus object: '%s'" % str(e))
+            sys.exit(2)
+
+    def quick(self, bits):
+        return self._random_data.quick(bits)
+
+    def _finished(self, thread_id, result):
+        if self._thread_id == self._thread_id:
+            self._result = result
+            self._done.set()
+
+    def slow(self, bits):
+        self._done = threading.Event()
+        self._thread_id = None
+        self._result = None
+
+        signal = self._bus.add_signal_receiver(path="/com/larry_price/test/RandomData", handler_function=self._finished,
+                                               dbus_interface="com.larry_price.test.RandomData", signal_name='slow_result')
+        self._thread_id = self._random_data.slow(bits)
+        self._done.wait()
+        signal.remove()
+
+        return self._result
 
 # Call the appropriate method with the given number of bits
-if args.slow:
-    import time
-    thread_id = random_data.slow(int(args.bits))
-    while True:
-        result = random_data.slow_result(thread_id)
-        if result:
-            print("Your random number is: %s" % result)
-            break
-
-        time.sleep(1)
-else:
-    print("Your random number is: %s" % random_data.quick(int(args.bits)))
+with RandomDataClient() as client:
+    if args.slow:
+        print("Your random number is: %s" % client.slow(int(args.bits)))
+    else:
+        print("Your random number is: %s" % client.quick(int(args.bits)))
